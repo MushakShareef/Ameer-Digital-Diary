@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Spiritual Digital Diary</title>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Tamil&display=swap" rel="stylesheet">
     <style>
         * {
             margin: 0;
@@ -333,8 +334,10 @@
 <body>
     <div class="app-container">
         <div class="header">
-            <div class="logo-placeholder">🕉️</div>
-            <div class="app-title">OM SHANTI</div>
+            <div class="logo-placeholder">
+                <img src="./baba.png" alt="baba">
+            </div>
+            <div class="app-title">Om Shanthi</div>
             <!-- Language Selector -->
             <div style="margin-top: 15px;">
                 <select id="languageSelector" onchange="changeLanguage()" style="padding: 8px 15px; border: 2px solid #667eea; border-radius: 20px; background: white; color: #667eea; font-weight: 500; cursor: pointer;">
@@ -460,471 +463,210 @@
     </div>
 
     <script>
-        // Data storage (in memory - for web app conversion to mobile, this would use local database)
-        let spiritualEntries = [];
-        let dailyEntries = [];
-        let recognition;
-        let currentVoiceTarget = null;
-        let currentLanguage = 'en-US'; // Default language
+    let spiritualEntries = [];
+    let dailyEntries = [];
+    let recognition;
+    let currentVoiceTarget = null;
+    let currentLanguage = 'en-US';
 
-        // Initialize the app
-        document.addEventListener('DOMContentLoaded', function() {
-            // Set today's date as default
-            const today = new Date().toISOString().split('T')[0];
-            document.getElementById('spiritualDate').value = today;
-            document.getElementById('dailyDate').value = today;
+    document.addEventListener('DOMContentLoaded', function () {
+        const today = new Date().toISOString().split('T')[0];
+        document.getElementById('spiritualDate').value = today;
+        document.getElementById('dailyDate').value = today;
 
-            // Initialize voice recognition if available
-            if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
-                recognition = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
-                recognition.continuous = false;
-                recognition.interimResults = false;
-                recognition.lang = 'ta-IN'; // Default to Tamil
+        initSpeechRecognition();
+        loadEntries();
+    });
 
-                recognition.onstart = function() {
-                    console.log('Voice recognition started in ' + recognition.lang);
-                };
+    function initSpeechRecognition() {
+        if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
+            recognition = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
+            recognition.continuous = false;
+            recognition.interimResults = false;
+            recognition.lang = currentLanguage;
 
-                recognition.onresult = function(event) {
-                    const text = event.results[0][0].transcript;
-                    if (currentVoiceTarget) {
-                        const currentText = document.getElementById(currentVoiceTarget).value;
-                        document.getElementById(currentVoiceTarget).value = currentText + (currentText ? ' ' : '') + text;
-                    }
-                };
+            recognition.onresult = function (event) {
+                const text = event.results[0][0].transcript;
+                if (currentVoiceTarget) {
+                    const textarea = document.getElementById(currentVoiceTarget);
+                    textarea.value += (textarea.value ? ' ' : '') + text;
+                }
+            };
 
-                recognition.onerror = function(event) {
-                    console.error('Voice recognition error:', event.error);
-                    let errorMsg = 'Voice recognition error: ' + event.error;
-                    if (event.error === 'no-speech') {
-                        errorMsg = 'பேச்சு கேட்கவில்லை. மீண்டும் முயற்சிக்கவும். / No speech detected. Please try again.';
-                    } else if (event.error === 'network') {
-                        errorMsg = 'இணைய இணைப்பு தேவை. / Network connection required.';
-                    }
-                    alert(errorMsg);
-                };
+            recognition.onerror = function (event) {
+                alert('Speech error: ' + event.error);
+            };
 
-                recognition.onend = function() {
-                    if (currentVoiceTarget) {
-                        document.querySelector(`button[onclick*="${currentVoiceTarget}"]`).classList.remove('recording');
-                    }
-                    currentVoiceTarget = null;
-                };
-            }
-
-            // Load existing entries
-            loadEntries();
-        });
-
-        // Tab switching
-        function switchTab(tabName) {
-            // Remove active class from all tabs and sections
-            document.querySelectorAll('.tab').forEach(tab => tab.classList.remove('active'));
-            document.querySelectorAll('.section').forEach(section => section.classList.remove('active'));
-
-            // Add active class to clicked tab and corresponding section
-            event.target.classList.add('active');
-            document.getElementById(tabName).classList.add('active');
-        }
-
-        // Voice input function with language support
-        function startVoiceInput(targetId) {
-            if (!recognition) {
-                const msg = currentLanguage === 'ta-IN' ? 
-                    'உங்கள் உலாவியில் பேச்சு அங்கீகாரம் ஆதரிக்கப்படவில்லை / Voice recognition not supported in your browser' :
-                    'Voice recognition is not supported in your browser';
-                alert(msg);
-                return;
-            }
-
-            currentVoiceTarget = targetId;
-            const button = document.querySelector(`button[onclick*="${targetId}"]`);
-            button.classList.add('recording');
-            
-            // Set recognition language
-            recognition.lang = document.getElementById('languageSelector').value;
-            
-            try {
-                recognition.start();
-                
-                // Show language-specific recording message
-                const recordingMsg = recognition.lang === 'ta-IN' ? 
-                    'தமிழில் பேசுங்கள்... / Speak in Tamil...' :
-                    recognition.lang === 'hi-IN' ?
-                    'हिन्दी में बोलें... / Speak in Hindi...' :
-                    'Speak in English...';
-                
-                // Update button text temporarily
-                button.textContent = '🔴';
-                button.title = recordingMsg;
-                
-                setTimeout(() => {
-                    if (button.classList.contains('recording')) {
-                        button.textContent = '🎤';
-                        button.title = 'Voice Input';
-                    }
-                }, 100);
-                
-            } catch (error) {
-                console.error('Error starting voice recognition:', error);
-                button.classList.remove('recording');
+            recognition.onend = function () {
+                if (currentVoiceTarget) {
+                    document.querySelector(`button[onclick*="${currentVoiceTarget}"]`).classList.remove('recording');
+                }
                 currentVoiceTarget = null;
-            }
+            };
         }
+    }
 
-        // Change language for voice recognition
-        function changeLanguage() {
-            const selectedLang = document.getElementById('languageSelector').value;
-            currentLanguage = selectedLang;
-            
-            if (recognition) {
-                recognition.lang = selectedLang;
-            }
-            
-            // Update placeholder texts based on language
-            updatePlaceholders(selectedLang);
-            
-            // Show language change message
-            const messages = {
-                'ta-IN': 'மொழி தமிழ் என மாற்றப்பட்டது / Language changed to Tamil',
-                'en-US': 'Language changed to English / மொழி ஆங்கிலம் என மாற்றப்பட்டது',
-                'hi-IN': 'भाषा हिन्दी में बदली गई / Language changed to Hindi'
-            };
-            
-            showMessage(messages[selectedLang] || messages['en-US']);
-        }
+    function switchTab(tabName) {
+        document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+        document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
 
-        // Update placeholder texts based on language
-        function updatePlaceholders(lang) {
-            const placeholders = {
-                'ta-IN': {
-                    spiritualPoints: 'உங்கள் ஆன்மீக குறிப்புகளை இங்கே எழுதுங்கள்...',
-                    spiritualSpecial: 'சிறப்பு கவனிப்புகள்...',
-                    dailyTags: 'வேலை, குடும்பம், உடல்நலம், இலக்குகள்',
-                    dailyContent: 'இன்று என்ன நடந்தது? என்ன நினைவில் வைக்க வேண்டும்?',
-                    dailySpecial: 'முக்கியமான நினைவூட்டல்கள் அல்லது சிந்தனைகள்...',
-                    spiritualSearch: '🔍 ஆன்மீக குறிப்புகளைத் தேடுங்கள்... (எல்லாவற்றையும் பார்க்க காலியாக விடுங்கள்)',
-                    dailySearch: '🔍 தினசரி குறிப்புகளைத் தேடுங்கள்... (எல்லாவற்றையும் பார்க்க காலியாக விடுங்கள்)'
-                },
-                'hi-IN': {
-                    spiritualPoints: 'यहाँ अपने आध्यात्मिक नोट्स लिखें...',
-                    spiritualSpecial: 'विशेष टिप्पणियाँ...',
-                    dailyTags: 'काम, परिवार, स्वास्थ्य, लक्ष्य',
-                    dailyContent: 'आज क्या हुआ? क्या याद रखना चाहते हैं?',
-                    dailySpecial: 'महत्वपूर्ण याददाश्त या विचार...',
-                    spiritualSearch: '🔍 आध्यात्मिक नोट्स खोजें... (सभी देखने के लिए खाली छोड़ें)',
-                    dailySearch: '🔍 दैनिक नोट्स खोजें... (सभी देखने के लिए खाली छोड़ें)'
-                },
-                'en-US': {
-                    spiritualPoints: 'Enter your spiritual points here...',
-                    spiritualSpecial: 'Any special observations...',
-                    dailyTags: 'e.g., work, family, health, goals',
-                    dailyContent: 'What happened today? What do you want to remember?',
-                    dailySpecial: 'Important reminders or reflections...',
-                    spiritualSearch: '🔍 Search spiritual notes... (leave empty to see all entries)',
-                    dailySearch: '🔍 Search daily notes... (leave empty to see all entries)'
-                }
-            };
-            
-            const texts = placeholders[lang] || placeholders['en-US'];
-            
-            // Update all placeholders
-            const elements = {
-                'spiritualPoints': document.getElementById('spiritualPoints'),
-                'spiritualSpecial': document.getElementById('spiritualSpecial'),
-                'dailyTags': document.getElementById('dailyTags'),
-                'dailyContent': document.getElementById('dailyContent'),
-                'dailySpecial': document.getElementById('dailySpecial'),
-                'spiritualSearch': document.getElementById('spiritualSearch'),
-                'dailySearch': document.getElementById('dailySearch')
-            };
-            
-            Object.keys(elements).forEach(key => {
-                if (elements[key] && texts[key]) {
-                    elements[key].placeholder = texts[key];
-                }
-            });
-        }
+        event.target.classList.add('active');
+        document.getElementById(tabName).classList.add('active');
+    }
 
-        // Form submission handlers
-        document.getElementById('spiritualForm').addEventListener('submit', function(e) {
-            e.preventDefault();
-            
-            const entry = {
-                id: Date.now(),
-                murliType: document.getElementById('murliType').value,
-                date: document.getElementById('spiritualDate').value,
-                points: document.getElementById('spiritualPoints').value,
-                special: document.getElementById('spiritualSpecial').value,
-                timestamp: new Date().toISOString()
-            };
+    function startVoiceInput(targetId) {
+        if (!recognition) return alert('Speech not supported in this browser');
+        currentVoiceTarget = targetId;
+        recognition.lang = document.getElementById('languageSelector').value;
+        const button = document.querySelector(`button[onclick*="${targetId}"]`);
+        button.classList.add('recording');
+        recognition.start();
+    }
 
+    function saveToLocalStorage() {
+        localStorage.setItem('spiritualEntries', JSON.stringify(spiritualEntries));
+        localStorage.setItem('dailyEntries', JSON.stringify(dailyEntries));
+    }
+
+    function loadEntries() {
+        spiritualEntries = JSON.parse(localStorage.getItem('spiritualEntries')) || [];
+        dailyEntries = JSON.parse(localStorage.getItem('dailyEntries')) || [];
+        displayEntries('spiritual');
+        displayEntries('daily');
+    }
+
+    document.getElementById('spiritualForm').addEventListener('submit', function (e) {
+        e.preventDefault();
+        const id = this.dataset.editing || Date.now();
+        const entry = {
+            id,
+            murliType: document.getElementById('murliType').value,
+            date: document.getElementById('spiritualDate').value,
+            points: document.getElementById('spiritualPoints').value,
+            special: document.getElementById('spiritualSpecial').value,
+        };
+
+        const index = spiritualEntries.findIndex(e => e.id == id);
+        if (index > -1) {
+            spiritualEntries[index] = entry;
+            showMessage('Spiritual note updated ✅');
+        } else {
             spiritualEntries.unshift(entry);
-            this.reset();
-            document.getElementById('spiritualDate').value = new Date().toISOString().split('T')[0];
-            displayEntries('spiritual');
-            
-            // Show success message
-            showMessage('Spiritual note saved successfully! ✨');
-        });
+            showMessage('Spiritual note saved ✨');
+        }
 
-        document.getElementById('dailyForm').addEventListener('submit', function(e) {
-            e.preventDefault();
-            
-            const entry = {
-                id: Date.now(),
-                tags: document.getElementById('dailyTags').value,
-                date: document.getElementById('dailyDate').value,
-                content: document.getElementById('dailyContent').value,
-                special: document.getElementById('dailySpecial').value,
-                timestamp: new Date().toISOString()
-            };
+        this.reset();
+        delete this.dataset.editing;
+        document.getElementById('spiritualDate').value = new Date().toISOString().split('T')[0];
+        saveToLocalStorage();
+        displayEntries('spiritual');
+    });
 
+    document.getElementById('dailyForm').addEventListener('submit', function (e) {
+        e.preventDefault();
+        const id = this.dataset.editing || Date.now();
+        const entry = {
+            id,
+            tags: document.getElementById('dailyTags').value,
+            date: document.getElementById('dailyDate').value,
+            content: document.getElementById('dailyContent').value,
+            special: document.getElementById('dailySpecial').value,
+        };
+
+        const index = dailyEntries.findIndex(e => e.id == id);
+        if (index > -1) {
+            dailyEntries[index] = entry;
+            showMessage('Daily note updated ✅');
+        } else {
             dailyEntries.unshift(entry);
-            this.reset();
-            document.getElementById('dailyDate').value = new Date().toISOString().split('T')[0];
-            displayEntries('daily');
-            
-            // Show success message
-            showMessage('Daily note saved successfully! 📝');
-        });
-
-        // Enhanced display entries function
-        function displayEntries(type) {
-            const entries = type === 'spiritual' ? spiritualEntries : dailyEntries;
-            displayFilteredEntries(type, entries);
+            showMessage('Daily note saved 📝');
         }
 
-        // Enhanced search entries - supports Tamil, Hindi, and English
-        function searchEntries(type) {
-            const searchTerm = event.target.value.toLowerCase().trim();
-            const entries = type === 'spiritual' ? spiritualEntries : dailyEntries;
-            
-            // If search is empty, show all entries
-            if (searchTerm === '') {
-                displayFilteredEntries(type, entries);
-                return;
-            }
-            
-            const filteredEntries = entries.filter(entry => {
-                // Enhanced search - searches ALL fields comprehensively
-                const searchFields = [];
-                
-                if (type === 'spiritual') {
-                    searchFields.push(
-                        entry.murliType || '',
-                        entry.points || '',
-                        entry.special || '',
-                        entry.date || '',
-                        formatDate(entry.date) || ''
-                    );
-                } else {
-                    searchFields.push(
-                        entry.tags || '',
-                        entry.content || '',
-                        entry.special || '',
-                        entry.date || '',
-                        formatDate(entry.date) || ''
-                    );
-                }
-                
-                // Join all fields and search for partial matches (supports Unicode for Tamil/Hindi)
-                const combinedText = searchFields.join(' ').toLowerCase();
-                
-                // Multiple search terms support (space separated) - works with Tamil, Hindi, English
-                const searchTerms = searchTerm.split(/\s+/).filter(term => term.length > 0);
-                
-                // Check if ALL search terms are found (AND logic) - Unicode-friendly search
-                return searchTerms.every(term => {
-                    // Direct text match (works for Tamil, Hindi, English)
-                    return combinedText.includes(term);
-                });
-            });
+        this.reset();
+        delete this.dataset.editing;
+        document.getElementById('dailyDate').value = new Date().toISOString().split('T')[0];
+        saveToLocalStorage();
+        displayEntries('daily');
+    });
 
-            displayFilteredEntries(type, filteredEntries, searchTerm);
-        }
-
-        // Display filtered entries with enhanced formatting (supports Tamil text)
-        function displayFilteredEntries(type, entries, searchTerm = '') {
-            const container = document.getElementById(type + 'Entries');
-            
-            if (entries.length === 0) {
-                const lang = document.getElementById('languageSelector').value;
-                if (searchTerm) {
-                    const noResultsMsg = {
-                        'ta-IN': `🔍 "${searchTerm}" க்கான முடிவுகள் எதுவும் கிடைக்கவில்லை`,
-                        'hi-IN': `🔍 "${searchTerm}" के लिए कोई परिणाम नहीं मिला`,
-                        'en-US': `🔍 No entries found matching "${searchTerm}"`
-                    };
-                    const tryDifferentMsg = {
-                        'ta-IN': 'வேறு சொற்களை முயற்சிக்கவும் அல்லது எழுத்துப் பிழையை சரிபார்க்கவும்',
-                        'hi-IN': 'अलग शब्दों की कोशिश करें या स्पेलिंग जांचें',
-                        'en-US': 'Try different keywords or check spelling'
-                    };
-                    
-                    container.innerHTML = `
-                        <div class="no-entries">
-                            <p>${noResultsMsg[lang] || noResultsMsg['en-US']}</p>
-                            <p style="margin-top: 10px; font-size: 14px;">${tryDifferentMsg[lang] || tryDifferentMsg['en-US']}</p>
-                        </div>
-                    `;
-                } else {
-                    const noEntriesMsg = {
-                        'ta-IN': `${type === 'spiritual' ? '🙏 இன்னும் ஆன்மீக குறிப்புகள் எதுவும் இல்லை' : '📝 இன்னும் தினசரி குறிப்புகள் எதுவும் இல்லை'}`,
-                        'hi-IN': `${type === 'spiritual' ? '🙏 अभी तक कोई आध्यात्मिक नोट्स नहीं' : '📝 अभी तक कोई दैनिक नोट्स नहीं'}`,
-                        'en-US': `${type === 'spiritual' ? '🙏 No spiritual notes yet' : '📝 No daily notes yet'}`
-                    };
-                    const startAddingMsg = {
-                        'ta-IN': 'மேலே உங்கள் முதல் குறிப்பைச் சேர்த்து தொடங்குங்கள்!',
-                        'hi-IN': 'ऊपर अपना पहला नोट जोड़कर शुरू करें!',
-                        'en-US': 'Start by adding your first entry above!'
-                    };
-                    
-                    const lang = document.getElementById('languageSelector').value;
-                    container.innerHTML = `
-                        <div class="no-entries">
-                            <p>${noEntriesMsg[lang] || noEntriesMsg['en-US']}</p>
-                            <p>${startAddingMsg[lang] || startAddingMsg['en-US']}</p>
-                        </div>
-                    `;
-                }
-                return;
-            }
-
-            // Show search results count with Tamil support
-            const lang = document.getElementById('languageSelector').value;
-            const resultsText = {
-                'ta-IN': searchTerm ? 
-                    `🔍 "${searchTerm}" க்கு ${entries.length} முடிவு${entries.length !== 1 ? 'கள்' : ''} கிடைத்தது` : 
-                    `📋 அனைத்து ${entries.length} ${type === 'spiritual' ? 'ஆன்மீக' : 'தினசரி'} குறிப்புகளைக் காட்டுகிறது`,
-                'hi-IN': searchTerm ? 
-                    `🔍 "${searchTerm}" के लिए ${entries.length} परिणाम मिल${entries.length !== 1 ? 'े' : 'ा'}` : 
-                    `📋 सभी ${entries.length} ${type === 'spiritual' ? 'आध्यात्मिक' : 'दैनिक'} नोट्स दिखा रहा है`,
-                'en-US': searchTerm ? 
-                    `🔍 Found ${entries.length} result${entries.length !== 1 ? 's' : ''} for "${searchTerm}"` : 
-                    `📋 Showing all ${entries.length} ${type} entries`
-            };
-            
-            const headerColor = searchTerm ? 'linear-gradient(135deg, #667eea, #764ba2)' : 'linear-gradient(135deg, #4CAF50, #45a049)';
-            
-            const resultsHeader = `<div style="background: ${headerColor}; color: white; padding: 10px 15px; border-radius: 10px; margin-bottom: 15px; font-size: 14px; text-align: center;">
-                ${resultsText[lang] || resultsText['en-US']}
+    function displayEntries(type) {
+        const container = document.getElementById(type + 'Entries');
+        const entries = (type === 'spiritual' ? spiritualEntries : dailyEntries);
+        container.innerHTML = entries.map(entry => {
+            return `
+            <div class="entry-card" data-id="${entry.id}">
+                <div class="entry-header">
+                    <div class="entry-title">${type === 'spiritual' ? entry.murliType : formatTags(entry.tags)}</div>
+                    <div class="entry-date">${formatDate(entry.date)}</div>
+                </div>
+                <div class="entry-content">${type === 'spiritual' ? entry.points : entry.content}</div>
+                ${entry.special ? `<div class="entry-special">${entry.special}</div>` : ''}
+                <div style="margin-top:10px;">
+                    <button onclick="editEntry('${type}', '${entry.id}')" class="btn-primary" style="width:auto;padding:5px 10px;margin-right:10px;">📝 Edit</button>
+                    <button onclick="deleteEntry('${type}', '${entry.id}')" class="btn-primary" style="background:#e74c3c;">🗑️ Delete</button>
+                </div>
             </div>`;
+        }).join('');
+    }
 
-            container.innerHTML = resultsHeader + entries.map(entry => {
-                if (type === 'spiritual') {
-                    return `
-                        <div class="entry-card">
-                            <div class="entry-header">
-                                <div class="entry-title">${highlightText(entry.murliType, searchTerm)}</div>
-                                <div class="entry-date">${formatDate(entry.date)}</div>
-                            </div>
-                            <div class="entry-content" style="unicode-bidi: bidi-override; direction: ltr; text-align: left;">${highlightText(entry.points, searchTerm)}</div>
-                            ${entry.special ? `<div class="entry-special" style="unicode-bidi: bidi-override; direction: ltr; text-align: left;">${highlightText(entry.special, searchTerm)}</div>` : ''}
-                        </div>
-                    `;
-                } else {
-                    return `
-                        <div class="entry-card">
-                            <div class="entry-header">
-                                <div class="entry-title">
-                                    ${entry.tags.split(',').map(tag => `<span class="tag">${highlightText(tag.trim(), searchTerm)}</span>`).join('')}
-                                </div>
-                                <div class="entry-date">${formatDate(entry.date)}</div>
-                            </div>
-                            <div class="entry-content" style="unicode-bidi: bidi-override; direction: ltr; text-align: left;">${highlightText(entry.content, searchTerm)}</div>
-                            ${entry.special ? `<div class="entry-special" style="unicode-bidi: bidi-override; direction: ltr; text-align: left;">${highlightText(entry.special, searchTerm)}</div>` : ''}
-                        </div>
-                    `;
-                }
-            }).join('');
+    function editEntry(type, id) {
+        const entries = (type === 'spiritual' ? spiritualEntries : dailyEntries);
+        const entry = entries.find(e => e.id == id);
+        if (!entry) return;
+
+        if (type === 'spiritual') {
+            const form = document.getElementById('spiritualForm');
+            document.getElementById('murliType').value = entry.murliType;
+            document.getElementById('spiritualDate').value = entry.date;
+            document.getElementById('spiritualPoints').value = entry.points;
+            document.getElementById('spiritualSpecial').value = entry.special;
+            form.dataset.editing = id;
+            switchTab('spiritual');
+            window.scrollTo(0, form.offsetTop - 60);
+        } else {
+            const form = document.getElementById('dailyForm');
+            document.getElementById('dailyTags').value = entry.tags;
+            document.getElementById('dailyDate').value = entry.date;
+            document.getElementById('dailyContent').value = entry.content;
+            document.getElementById('dailySpecial').value = entry.special;
+            form.dataset.editing = id;
+            switchTab('daily');
+            window.scrollTo(0, form.offsetTop - 60);
         }
+    }
 
-        // Highlight search terms in text
-        function highlightText(text, searchTerm) {
-            if (!searchTerm || !text) return text;
-            
-            const searchTerms = searchTerm.toLowerCase().split(' ').filter(term => term.length > 0);
-            let highlightedText = text;
-            
-            searchTerms.forEach(term => {
-                const regex = new RegExp(`(${term})`, 'gi');
-                highlightedText = highlightedText.replace(regex, '<mark style="background: #ffeb3b; padding: 2px 4px; border-radius: 3px; font-weight: bold;">$1</mark>');
-            });
-            
-            return highlightedText;
+    function deleteEntry(type, id) {
+        if (!confirm('Are you sure you want to delete this note?')) return;
+        if (type === 'spiritual') {
+            spiritualEntries = spiritualEntries.filter(e => e.id != id);
+        } else {
+            dailyEntries = dailyEntries.filter(e => e.id != id);
         }
+        saveToLocalStorage();
+        displayEntries(type);
+        showMessage('Entry deleted 🗑️');
+    }
 
-        // Utility functions
-        function formatDate(dateStr) {
-            const date = new Date(dateStr);
-            return date.toLocaleDateString('en-US', { 
-                year: 'numeric', 
-                month: 'short', 
-                day: 'numeric' 
-            });
-        }
+    function formatDate(dateStr) {
+        return new Date(dateStr).toLocaleDateString('en-IN', {
+            day: '2-digit', month: 'short', year: 'numeric'
+        });
+    }
 
-        function showMessage(message) {
-            // Create and show a temporary success message
-            const messageDiv = document.createElement('div');
-            messageDiv.style.cssText = `
-                position: fixed;
-                top: 20px;
-                left: 50%;
-                transform: translateX(-50%);
-                background: linear-gradient(135deg, #4CAF50, #45a049);
-                color: white;
-                padding: 15px 25px;
-                border-radius: 25px;
-                box-shadow: 0 8px 25px rgba(76, 175, 80, 0.3);
-                z-index: 1000;
-                font-weight: 500;
-                animation: slideDown 0.3s ease;
-            `;
-            messageDiv.textContent = message;
-            
-            document.body.appendChild(messageDiv);
-            
-            setTimeout(() => {
-                messageDiv.style.animation = 'slideUp 0.3s ease forwards';
-                setTimeout(() => document.body.removeChild(messageDiv), 300);
-            }, 3000);
-        }
+    function formatTags(tags) {
+        return tags.split(',').map(tag => `<span class="tag">${tag.trim()}</span>`).join(' ');
+    }
 
-        function loadEntries() {
-            // For web app, you would load from localStorage or a database
-            // For now, we'll start with empty arrays
-            displayEntries('spiritual');
-            displayEntries('daily');
-        }
-
-        // Add CSS animations for messages
-        const style = document.createElement('style');
-        style.textContent = `
-            @keyframes slideDown {
-                from {
-                    transform: translateX(-50%) translateY(-100px);
-                    opacity: 0;
-                }
-                to {
-                    transform: translateX(-50%) translateY(0);
-                    opacity: 1;
-                }
-            }
-            
-            @keyframes slideUp {
-                from {
-                    transform: translateX(-50%) translateY(0);
-                    opacity: 1;
-                }
-                to {
-                    transform: translateX(-50%) translateY(-100px);
-                    opacity: 0;
-                }
-            }
-        `;
-        document.head.appendChild(style);
+    function showMessage(msg) {
+        const m = document.createElement('div');
+        m.style = `position:fixed;top:20px;left:50%;transform:translateX(-50%);background:#2ecc71;color:white;padding:10px 20px;border-radius:20px;z-index:999;font-weight:500;box-shadow:0 4px 20px rgba(0,0,0,0.2)`;
+        m.textContent = msg;
+        document.body.appendChild(m);
+        setTimeout(() => m.remove(), 3000);
+    }
     </script>
+
 </body>
 </html>
+
+   <!-- 670 line from Chapy -->
