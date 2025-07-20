@@ -383,7 +383,10 @@
                 </form>
 
                 <div class="entries-list">
-                    <input type="text" class="search-box" placeholder="🔍 Search spiritual notes..." onkeyup="searchEntries('spiritual')">
+                    <input type="text" class="search-box" placeholder="🔍 Search spiritual notes... (leave empty to see all entries)" onkeyup="searchEntries('spiritual')" id="spiritualSearch">
+                    <div style="font-size: 12px; color: #666; margin-bottom: 15px; text-align: center;">
+                        💡 <strong>Search Tips:</strong> Search by murli type, date, content, or any text. Use multiple words for better results!
+                    </div>
                     <div id="spiritualEntries"></div>
                 </div>
             </div>
@@ -428,7 +431,10 @@
                 </form>
 
                 <div class="entries-list">
-                    <input type="text" class="search-box" placeholder="🔍 Search daily notes..." onkeyup="searchEntries('daily')">
+                    <input type="text" class="search-box" placeholder="🔍 Search daily notes... (leave empty to see all entries)" onkeyup="searchEntries('daily')" id="dailySearch">
+                    <div style="font-size: 12px; color: #666; margin-bottom: 15px; text-align: center;">
+                        💡 <strong>Search Tips:</strong> Search by tags, date, content, or any text. Use multiple words for better results!
+                    </div>
                     <div id="dailyEntries"></div>
                 </div>
             </div>
@@ -559,31 +565,100 @@
             showMessage('Daily note saved successfully! 📝');
         });
 
-        // Display entries
+        // Enhanced display entries function
         function displayEntries(type) {
-            const container = document.getElementById(type + 'Entries');
             const entries = type === 'spiritual' ? spiritualEntries : dailyEntries;
+            displayFilteredEntries(type, entries);
+        }
 
+        // Enhanced search entries - searches entire memory with better partial matching
+        function searchEntries(type) {
+            const searchTerm = event.target.value.toLowerCase().trim();
+            const entries = type === 'spiritual' ? spiritualEntries : dailyEntries;
+            
+            // If search is empty, show all entries
+            if (searchTerm === '') {
+                displayFilteredEntries(type, entries);
+                return;
+            }
+            
+            const filteredEntries = entries.filter(entry => {
+                // Enhanced search - searches ALL fields comprehensively
+                const searchFields = [];
+                
+                if (type === 'spiritual') {
+                    searchFields.push(
+                        entry.murliType || '',
+                        entry.points || '',
+                        entry.special || '',
+                        entry.date || '',
+                        formatDate(entry.date) || ''
+                    );
+                } else {
+                    searchFields.push(
+                        entry.tags || '',
+                        entry.content || '',
+                        entry.special || '',
+                        entry.date || '',
+                        formatDate(entry.date) || ''
+                    );
+                }
+                
+                // Join all fields and search for partial matches
+                const combinedText = searchFields.join(' ').toLowerCase();
+                
+                // Multiple search terms support (space separated)
+                const searchTerms = searchTerm.split(' ').filter(term => term.length > 0);
+                
+                // Check if ALL search terms are found (AND logic)
+                return searchTerms.every(term => combinedText.includes(term));
+            });
+
+            displayFilteredEntries(type, filteredEntries, searchTerm);
+        }
+
+        // Display filtered entries with enhanced formatting
+        function displayFilteredEntries(type, entries, searchTerm = '') {
+            const container = document.getElementById(type + 'Entries');
+            
             if (entries.length === 0) {
-                container.innerHTML = `
-                    <div class="no-entries">
-                        <p>${type === 'spiritual' ? '🙏' : '📝'} No ${type} notes yet.</p>
-                        <p>Start by adding your first entry above!</p>
-                    </div>
-                `;
+                if (searchTerm) {
+                    container.innerHTML = `
+                        <div class="no-entries">
+                            <p>🔍 No entries found matching "${searchTerm}"</p>
+                            <p style="margin-top: 10px; font-size: 14px;">Try different keywords or check spelling</p>
+                        </div>
+                    `;
+                } else {
+                    container.innerHTML = `
+                        <div class="no-entries">
+                            <p>${type === 'spiritual' ? '🙏' : '📝'} No ${type} notes yet.</p>
+                            <p>Start by adding your first entry above!</p>
+                        </div>
+                    `;
+                }
                 return;
             }
 
-            container.innerHTML = entries.map(entry => {
+            // Show search results count
+            const resultsHeader = searchTerm ? 
+                `<div style="background: linear-gradient(135deg, #667eea, #764ba2); color: white; padding: 10px 15px; border-radius: 10px; margin-bottom: 15px; font-size: 14px; text-align: center;">
+                    🔍 Found ${entries.length} result${entries.length !== 1 ? 's' : ''} for "${searchTerm}"
+                </div>` : 
+                `<div style="background: linear-gradient(135deg, #4CAF50, #45a049); color: white; padding: 10px 15px; border-radius: 10px; margin-bottom: 15px; font-size: 14px; text-align: center;">
+                    📋 Showing all ${entries.length} ${type} entries
+                </div>`;
+
+            container.innerHTML = resultsHeader + entries.map(entry => {
                 if (type === 'spiritual') {
                     return `
                         <div class="entry-card">
                             <div class="entry-header">
-                                <div class="entry-title">${entry.murliType}</div>
+                                <div class="entry-title">${highlightText(entry.murliType, searchTerm)}</div>
                                 <div class="entry-date">${formatDate(entry.date)}</div>
                             </div>
-                            <div class="entry-content">${entry.points}</div>
-                            ${entry.special ? `<div class="entry-special">${entry.special}</div>` : ''}
+                            <div class="entry-content">${highlightText(entry.points, searchTerm)}</div>
+                            ${entry.special ? `<div class="entry-special">${highlightText(entry.special, searchTerm)}</div>` : ''}
                         </div>
                     `;
                 } else {
@@ -591,73 +666,31 @@
                         <div class="entry-card">
                             <div class="entry-header">
                                 <div class="entry-title">
-                                    ${entry.tags.split(',').map(tag => `<span class="tag">${tag.trim()}</span>`).join('')}
+                                    ${entry.tags.split(',').map(tag => `<span class="tag">${highlightText(tag.trim(), searchTerm)}</span>`).join('')}
                                 </div>
                                 <div class="entry-date">${formatDate(entry.date)}</div>
                             </div>
-                            <div class="entry-content">${entry.content}</div>
-                            ${entry.special ? `<div class="entry-special">${entry.special}</div>` : ''}
+                            <div class="entry-content">${highlightText(entry.content, searchTerm)}</div>
+                            ${entry.special ? `<div class="entry-special">${highlightText(entry.special, searchTerm)}</div>` : ''}
                         </div>
                     `;
                 }
             }).join('');
         }
 
-        // Search entries
-        function searchEntries(type) {
-            const searchTerm = event.target.value.toLowerCase();
-            const entries = type === 'spiritual' ? spiritualEntries : dailyEntries;
+        // Highlight search terms in text
+        function highlightText(text, searchTerm) {
+            if (!searchTerm || !text) return text;
             
-            const filteredEntries = entries.filter(entry => {
-                if (type === 'spiritual') {
-                    return entry.murliType.toLowerCase().includes(searchTerm) ||
-                           entry.points.toLowerCase().includes(searchTerm) ||
-                           (entry.special && entry.special.toLowerCase().includes(searchTerm));
-                } else {
-                    return entry.tags.toLowerCase().includes(searchTerm) ||
-                           entry.content.toLowerCase().includes(searchTerm) ||
-                           (entry.special && entry.special.toLowerCase().includes(searchTerm));
-                }
+            const searchTerms = searchTerm.toLowerCase().split(' ').filter(term => term.length > 0);
+            let highlightedText = text;
+            
+            searchTerms.forEach(term => {
+                const regex = new RegExp(`(${term})`, 'gi');
+                highlightedText = highlightedText.replace(regex, '<mark style="background: #ffeb3b; padding: 2px 4px; border-radius: 3px; font-weight: bold;">$1</mark>');
             });
-
-            const container = document.getElementById(type + 'Entries');
             
-            if (filteredEntries.length === 0) {
-                container.innerHTML = `
-                    <div class="no-entries">
-                        <p>🔍 No entries found matching "${searchTerm}"</p>
-                    </div>
-                `;
-                return;
-            }
-
-            container.innerHTML = filteredEntries.map(entry => {
-                if (type === 'spiritual') {
-                    return `
-                        <div class="entry-card">
-                            <div class="entry-header">
-                                <div class="entry-title">${entry.murliType}</div>
-                                <div class="entry-date">${formatDate(entry.date)}</div>
-                            </div>
-                            <div class="entry-content">${entry.points}</div>
-                            ${entry.special ? `<div class="entry-special">${entry.special}</div>` : ''}
-                        </div>
-                    `;
-                } else {
-                    return `
-                        <div class="entry-card">
-                            <div class="entry-header">
-                                <div class="entry-title">
-                                    ${entry.tags.split(',').map(tag => `<span class="tag">${tag.trim()}</span>`).join('')}
-                                </div>
-                                <div class="entry-date">${formatDate(entry.date)}</div>
-                            </div>
-                            <div class="entry-content">${entry.content}</div>
-                            ${entry.special ? `<div class="entry-special">${entry.special}</div>` : ''}
-                        </div>
-                    `;
-                }
-            }).join('');
+            return highlightedText;
         }
 
         // Utility functions
