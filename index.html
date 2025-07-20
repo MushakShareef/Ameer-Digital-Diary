@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -12,10 +12,14 @@
         }
 
         body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            font-family: 'Segoe UI', 'Latha', 'Tamil Sangam MN', Tahoma, Geneva, Verdana, sans-serif;
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             min-height: 100vh;
             color: #333;
+            /* Support for Tamil text rendering */
+            -webkit-font-feature-settings: "liga" 1, "clig" 1;
+            font-feature-settings: "liga" 1, "clig" 1;
+            text-rendering: optimizeLegibility;
         }
 
         .app-container {
@@ -121,6 +125,11 @@
             font-size: 16px;
             transition: all 0.3s ease;
             background: white;
+            /* Tamil text support */
+            font-family: 'Segoe UI', 'Latha', 'Tamil Sangam MN', 'Noto Sans Tamil', Arial, sans-serif;
+            line-height: 1.5;
+            direction: ltr;
+            unicode-bidi: bidi-override;
         }
 
         .form-group input:focus,
@@ -324,10 +333,19 @@
 <body>
     <div class="app-container">
         <div class="header">
-            <div class="logo-placeholder">
-                <img src="./baba.png" alt="baba">
+            <div class="logo-placeholder">🕉️</div>
+            <div class="app-title">OM SHANTI</div>
+            <!-- Language Selector -->
+            <div style="margin-top: 15px;">
+                <select id="languageSelector" onchange="changeLanguage()" style="padding: 8px 15px; border: 2px solid #667eea; border-radius: 20px; background: white; color: #667eea; font-weight: 500; cursor: pointer;">
+                    <option value="ta-IN">தமிழ் (Tamil)</option>
+                    <option value="en-US">English</option>
+                    <option value="hi-IN">हिन्दी (Hindi)</option>
+                </select>
+                <div style="font-size: 12px; color: #666; margin-top: 5px;">
+                    🎤 Voice & Search Language
+                </div>
             </div>
-            <div class="app-title">Om Shanthi</div>
         </div>
 
         <div class="tab-container">
@@ -447,6 +465,7 @@
         let dailyEntries = [];
         let recognition;
         let currentVoiceTarget = null;
+        let currentLanguage = 'en-US'; // Default language
 
         // Initialize the app
         document.addEventListener('DOMContentLoaded', function() {
@@ -460,10 +479,10 @@
                 recognition = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
                 recognition.continuous = false;
                 recognition.interimResults = false;
-                recognition.lang = 'en-US';
+                recognition.lang = 'ta-IN'; // Default to Tamil
 
                 recognition.onstart = function() {
-                    console.log('Voice recognition started');
+                    console.log('Voice recognition started in ' + recognition.lang);
                 };
 
                 recognition.onresult = function(event) {
@@ -476,12 +495,18 @@
 
                 recognition.onerror = function(event) {
                     console.error('Voice recognition error:', event.error);
-                    alert('Voice recognition error: ' + event.error);
+                    let errorMsg = 'Voice recognition error: ' + event.error;
+                    if (event.error === 'no-speech') {
+                        errorMsg = 'பேச்சு கேட்கவில்லை. மீண்டும் முயற்சிக்கவும். / No speech detected. Please try again.';
+                    } else if (event.error === 'network') {
+                        errorMsg = 'இணைய இணைப்பு தேவை. / Network connection required.';
+                    }
+                    alert(errorMsg);
                 };
 
                 recognition.onend = function() {
                     if (currentVoiceTarget) {
-                        document.querySelector(`button[onclick="startVoiceInput('${currentVoiceTarget}')"]`).classList.remove('recording');
+                        document.querySelector(`button[onclick*="${currentVoiceTarget}"]`).classList.remove('recording');
                     }
                     currentVoiceTarget = null;
                 };
@@ -502,24 +527,123 @@
             document.getElementById(tabName).classList.add('active');
         }
 
-        // Voice input function
+        // Voice input function with language support
         function startVoiceInput(targetId) {
             if (!recognition) {
-                alert('Voice recognition is not supported in your browser');
+                const msg = currentLanguage === 'ta-IN' ? 
+                    'உங்கள் உலாவியில் பேச்சு அங்கீகாரம் ஆதரிக்கப்படவில்லை / Voice recognition not supported in your browser' :
+                    'Voice recognition is not supported in your browser';
+                alert(msg);
                 return;
             }
 
             currentVoiceTarget = targetId;
-            const button = document.querySelector(`button[onclick="startVoiceInput('${targetId}')"]`);
+            const button = document.querySelector(`button[onclick*="${targetId}"]`);
             button.classList.add('recording');
+            
+            // Set recognition language
+            recognition.lang = document.getElementById('languageSelector').value;
             
             try {
                 recognition.start();
+                
+                // Show language-specific recording message
+                const recordingMsg = recognition.lang === 'ta-IN' ? 
+                    'தமிழில் பேசுங்கள்... / Speak in Tamil...' :
+                    recognition.lang === 'hi-IN' ?
+                    'हिन्दी में बोलें... / Speak in Hindi...' :
+                    'Speak in English...';
+                
+                // Update button text temporarily
+                button.textContent = '🔴';
+                button.title = recordingMsg;
+                
+                setTimeout(() => {
+                    if (button.classList.contains('recording')) {
+                        button.textContent = '🎤';
+                        button.title = 'Voice Input';
+                    }
+                }, 100);
+                
             } catch (error) {
                 console.error('Error starting voice recognition:', error);
                 button.classList.remove('recording');
                 currentVoiceTarget = null;
             }
+        }
+
+        // Change language for voice recognition
+        function changeLanguage() {
+            const selectedLang = document.getElementById('languageSelector').value;
+            currentLanguage = selectedLang;
+            
+            if (recognition) {
+                recognition.lang = selectedLang;
+            }
+            
+            // Update placeholder texts based on language
+            updatePlaceholders(selectedLang);
+            
+            // Show language change message
+            const messages = {
+                'ta-IN': 'மொழி தமிழ் என மாற்றப்பட்டது / Language changed to Tamil',
+                'en-US': 'Language changed to English / மொழி ஆங்கிலம் என மாற்றப்பட்டது',
+                'hi-IN': 'भाषा हिन्दी में बदली गई / Language changed to Hindi'
+            };
+            
+            showMessage(messages[selectedLang] || messages['en-US']);
+        }
+
+        // Update placeholder texts based on language
+        function updatePlaceholders(lang) {
+            const placeholders = {
+                'ta-IN': {
+                    spiritualPoints: 'உங்கள் ஆன்மீக குறிப்புகளை இங்கே எழுதுங்கள்...',
+                    spiritualSpecial: 'சிறப்பு கவனிப்புகள்...',
+                    dailyTags: 'வேலை, குடும்பம், உடல்நலம், இலக்குகள்',
+                    dailyContent: 'இன்று என்ன நடந்தது? என்ன நினைவில் வைக்க வேண்டும்?',
+                    dailySpecial: 'முக்கியமான நினைவூட்டல்கள் அல்லது சிந்தனைகள்...',
+                    spiritualSearch: '🔍 ஆன்மீக குறிப்புகளைத் தேடுங்கள்... (எல்லாவற்றையும் பார்க்க காலியாக விடுங்கள்)',
+                    dailySearch: '🔍 தினசரி குறிப்புகளைத் தேடுங்கள்... (எல்லாவற்றையும் பார்க்க காலியாக விடுங்கள்)'
+                },
+                'hi-IN': {
+                    spiritualPoints: 'यहाँ अपने आध्यात्मिक नोट्स लिखें...',
+                    spiritualSpecial: 'विशेष टिप्पणियाँ...',
+                    dailyTags: 'काम, परिवार, स्वास्थ्य, लक्ष्य',
+                    dailyContent: 'आज क्या हुआ? क्या याद रखना चाहते हैं?',
+                    dailySpecial: 'महत्वपूर्ण याददाश्त या विचार...',
+                    spiritualSearch: '🔍 आध्यात्मिक नोट्स खोजें... (सभी देखने के लिए खाली छोड़ें)',
+                    dailySearch: '🔍 दैनिक नोट्स खोजें... (सभी देखने के लिए खाली छोड़ें)'
+                },
+                'en-US': {
+                    spiritualPoints: 'Enter your spiritual points here...',
+                    spiritualSpecial: 'Any special observations...',
+                    dailyTags: 'e.g., work, family, health, goals',
+                    dailyContent: 'What happened today? What do you want to remember?',
+                    dailySpecial: 'Important reminders or reflections...',
+                    spiritualSearch: '🔍 Search spiritual notes... (leave empty to see all entries)',
+                    dailySearch: '🔍 Search daily notes... (leave empty to see all entries)'
+                }
+            };
+            
+            const texts = placeholders[lang] || placeholders['en-US'];
+            
+            // Update all placeholders
+            const elements = {
+                'spiritualPoints': document.getElementById('spiritualPoints'),
+                'spiritualSpecial': document.getElementById('spiritualSpecial'),
+                'dailyTags': document.getElementById('dailyTags'),
+                'dailyContent': document.getElementById('dailyContent'),
+                'dailySpecial': document.getElementById('dailySpecial'),
+                'spiritualSearch': document.getElementById('spiritualSearch'),
+                'dailySearch': document.getElementById('dailySearch')
+            };
+            
+            Object.keys(elements).forEach(key => {
+                if (elements[key] && texts[key]) {
+                    elements[key].placeholder = texts[key];
+                }
+            });
         }
 
         // Form submission handlers
@@ -571,7 +695,7 @@
             displayFilteredEntries(type, entries);
         }
 
-        // Enhanced search entries - searches entire memory with better partial matching
+        // Enhanced search entries - supports Tamil, Hindi, and English
         function searchEntries(type) {
             const searchTerm = event.target.value.toLowerCase().trim();
             const entries = type === 'spiritual' ? spiritualEntries : dailyEntries;
@@ -604,50 +728,88 @@
                     );
                 }
                 
-                // Join all fields and search for partial matches
+                // Join all fields and search for partial matches (supports Unicode for Tamil/Hindi)
                 const combinedText = searchFields.join(' ').toLowerCase();
                 
-                // Multiple search terms support (space separated)
-                const searchTerms = searchTerm.split(' ').filter(term => term.length > 0);
+                // Multiple search terms support (space separated) - works with Tamil, Hindi, English
+                const searchTerms = searchTerm.split(/\s+/).filter(term => term.length > 0);
                 
-                // Check if ALL search terms are found (AND logic)
-                return searchTerms.every(term => combinedText.includes(term));
+                // Check if ALL search terms are found (AND logic) - Unicode-friendly search
+                return searchTerms.every(term => {
+                    // Direct text match (works for Tamil, Hindi, English)
+                    return combinedText.includes(term);
+                });
             });
 
             displayFilteredEntries(type, filteredEntries, searchTerm);
         }
 
-        // Display filtered entries with enhanced formatting
+        // Display filtered entries with enhanced formatting (supports Tamil text)
         function displayFilteredEntries(type, entries, searchTerm = '') {
             const container = document.getElementById(type + 'Entries');
             
             if (entries.length === 0) {
+                const lang = document.getElementById('languageSelector').value;
                 if (searchTerm) {
+                    const noResultsMsg = {
+                        'ta-IN': `🔍 "${searchTerm}" க்கான முடிவுகள் எதுவும் கிடைக்கவில்லை`,
+                        'hi-IN': `🔍 "${searchTerm}" के लिए कोई परिणाम नहीं मिला`,
+                        'en-US': `🔍 No entries found matching "${searchTerm}"`
+                    };
+                    const tryDifferentMsg = {
+                        'ta-IN': 'வேறு சொற்களை முயற்சிக்கவும் அல்லது எழுத்துப் பிழையை சரிபார்க்கவும்',
+                        'hi-IN': 'अलग शब्दों की कोशिश करें या स्पेलिंग जांचें',
+                        'en-US': 'Try different keywords or check spelling'
+                    };
+                    
                     container.innerHTML = `
                         <div class="no-entries">
-                            <p>🔍 No entries found matching "${searchTerm}"</p>
-                            <p style="margin-top: 10px; font-size: 14px;">Try different keywords or check spelling</p>
+                            <p>${noResultsMsg[lang] || noResultsMsg['en-US']}</p>
+                            <p style="margin-top: 10px; font-size: 14px;">${tryDifferentMsg[lang] || tryDifferentMsg['en-US']}</p>
                         </div>
                     `;
                 } else {
+                    const noEntriesMsg = {
+                        'ta-IN': `${type === 'spiritual' ? '🙏 இன்னும் ஆன்மீக குறிப்புகள் எதுவும் இல்லை' : '📝 இன்னும் தினசரி குறிப்புகள் எதுவும் இல்லை'}`,
+                        'hi-IN': `${type === 'spiritual' ? '🙏 अभी तक कोई आध्यात्मिक नोट्स नहीं' : '📝 अभी तक कोई दैनिक नोट्स नहीं'}`,
+                        'en-US': `${type === 'spiritual' ? '🙏 No spiritual notes yet' : '📝 No daily notes yet'}`
+                    };
+                    const startAddingMsg = {
+                        'ta-IN': 'மேலே உங்கள் முதல் குறிப்பைச் சேர்த்து தொடங்குங்கள்!',
+                        'hi-IN': 'ऊपर अपना पहला नोट जोड़कर शुरू करें!',
+                        'en-US': 'Start by adding your first entry above!'
+                    };
+                    
+                    const lang = document.getElementById('languageSelector').value;
                     container.innerHTML = `
                         <div class="no-entries">
-                            <p>${type === 'spiritual' ? '🙏' : '📝'} No ${type} notes yet.</p>
-                            <p>Start by adding your first entry above!</p>
+                            <p>${noEntriesMsg[lang] || noEntriesMsg['en-US']}</p>
+                            <p>${startAddingMsg[lang] || startAddingMsg['en-US']}</p>
                         </div>
                     `;
                 }
                 return;
             }
 
-            // Show search results count
-            const resultsHeader = searchTerm ? 
-                `<div style="background: linear-gradient(135deg, #667eea, #764ba2); color: white; padding: 10px 15px; border-radius: 10px; margin-bottom: 15px; font-size: 14px; text-align: center;">
-                    🔍 Found ${entries.length} result${entries.length !== 1 ? 's' : ''} for "${searchTerm}"
-                </div>` : 
-                `<div style="background: linear-gradient(135deg, #4CAF50, #45a049); color: white; padding: 10px 15px; border-radius: 10px; margin-bottom: 15px; font-size: 14px; text-align: center;">
-                    📋 Showing all ${entries.length} ${type} entries
-                </div>`;
+            // Show search results count with Tamil support
+            const lang = document.getElementById('languageSelector').value;
+            const resultsText = {
+                'ta-IN': searchTerm ? 
+                    `🔍 "${searchTerm}" க்கு ${entries.length} முடிவு${entries.length !== 1 ? 'கள்' : ''} கிடைத்தது` : 
+                    `📋 அனைத்து ${entries.length} ${type === 'spiritual' ? 'ஆன்மீக' : 'தினசரி'} குறிப்புகளைக் காட்டுகிறது`,
+                'hi-IN': searchTerm ? 
+                    `🔍 "${searchTerm}" के लिए ${entries.length} परिणाम मिल${entries.length !== 1 ? 'े' : 'ा'}` : 
+                    `📋 सभी ${entries.length} ${type === 'spiritual' ? 'आध्यात्मिक' : 'दैनिक'} नोट्स दिखा रहा है`,
+                'en-US': searchTerm ? 
+                    `🔍 Found ${entries.length} result${entries.length !== 1 ? 's' : ''} for "${searchTerm}"` : 
+                    `📋 Showing all ${entries.length} ${type} entries`
+            };
+            
+            const headerColor = searchTerm ? 'linear-gradient(135deg, #667eea, #764ba2)' : 'linear-gradient(135deg, #4CAF50, #45a049)';
+            
+            const resultsHeader = `<div style="background: ${headerColor}; color: white; padding: 10px 15px; border-radius: 10px; margin-bottom: 15px; font-size: 14px; text-align: center;">
+                ${resultsText[lang] || resultsText['en-US']}
+            </div>`;
 
             container.innerHTML = resultsHeader + entries.map(entry => {
                 if (type === 'spiritual') {
@@ -657,8 +819,8 @@
                                 <div class="entry-title">${highlightText(entry.murliType, searchTerm)}</div>
                                 <div class="entry-date">${formatDate(entry.date)}</div>
                             </div>
-                            <div class="entry-content">${highlightText(entry.points, searchTerm)}</div>
-                            ${entry.special ? `<div class="entry-special">${highlightText(entry.special, searchTerm)}</div>` : ''}
+                            <div class="entry-content" style="unicode-bidi: bidi-override; direction: ltr; text-align: left;">${highlightText(entry.points, searchTerm)}</div>
+                            ${entry.special ? `<div class="entry-special" style="unicode-bidi: bidi-override; direction: ltr; text-align: left;">${highlightText(entry.special, searchTerm)}</div>` : ''}
                         </div>
                     `;
                 } else {
@@ -670,8 +832,8 @@
                                 </div>
                                 <div class="entry-date">${formatDate(entry.date)}</div>
                             </div>
-                            <div class="entry-content">${highlightText(entry.content, searchTerm)}</div>
-                            ${entry.special ? `<div class="entry-special">${highlightText(entry.special, searchTerm)}</div>` : ''}
+                            <div class="entry-content" style="unicode-bidi: bidi-override; direction: ltr; text-align: left;">${highlightText(entry.content, searchTerm)}</div>
+                            ${entry.special ? `<div class="entry-special" style="unicode-bidi: bidi-override; direction: ltr; text-align: left;">${highlightText(entry.special, searchTerm)}</div>` : ''}
                         </div>
                     `;
                 }
