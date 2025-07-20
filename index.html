@@ -1,0 +1,735 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Spiritual Digital Diary</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            color: #333;
+        }
+
+        .app-container {
+            max-width: 100%;
+            min-height: 100vh;
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+        }
+
+        .header {
+            text-align: center;
+            padding: 20px;
+            background: linear-gradient(135deg, #ff9a9e 0%, #fecfef 50%, #fecfef 100%);
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+        }
+
+        .logo-placeholder {
+            width: 80px;
+            height: 80px;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            border-radius: 50%;
+            margin: 0 auto 15px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 24px;
+            font-weight: bold;
+            box-shadow: 0 8px 25px rgba(102, 126, 234, 0.3);
+        }
+
+        .app-title {
+            font-size: 24px;
+            color: #4a4a4a;
+            margin-bottom: 10px;
+            font-weight: 300;
+            letter-spacing: 2px;
+        }
+
+        .tab-container {
+            display: flex;
+            background: #fff;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            margin: 0;
+        }
+
+        .tab {
+            flex: 1;
+            padding: 15px 20px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-weight: 500;
+            border-bottom: 3px solid transparent;
+            background: #f8f9ff;
+        }
+
+        .tab.active {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            border-bottom: 3px solid #ff9a9e;
+        }
+
+        .tab:hover:not(.active) {
+            background: #e8f0fe;
+            transform: translateY(-2px);
+        }
+
+        .content {
+            padding: 20px;
+            min-height: calc(100vh - 200px);
+        }
+
+        .section {
+            display: none;
+        }
+
+        .section.active {
+            display: block;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            color: #555;
+            font-weight: 500;
+            font-size: 14px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .form-group input,
+        .form-group select,
+        .form-group textarea {
+            width: 100%;
+            padding: 12px 15px;
+            border: 2px solid #e1e8f0;
+            border-radius: 10px;
+            font-size: 16px;
+            transition: all 0.3s ease;
+            background: white;
+        }
+
+        .form-group input:focus,
+        .form-group select:focus,
+        .form-group textarea:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 20px rgba(102, 126, 234, 0.2);
+            transform: translateY(-1px);
+        }
+
+        .form-group textarea {
+            min-height: 120px;
+            resize: vertical;
+        }
+
+        .voice-input-container {
+            position: relative;
+        }
+
+        .voice-btn {
+            position: absolute;
+            right: 10px;
+            top: 50%;
+            transform: translateY(-50%);
+            background: linear-gradient(135deg, #ff9a9e, #fecfef);
+            border: none;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            cursor: pointer;
+            font-size: 18px;
+            color: white;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(255, 154, 158, 0.3);
+        }
+
+        .voice-btn:hover {
+            transform: translateY(-50%) scale(1.1);
+            box-shadow: 0 6px 20px rgba(255, 154, 158, 0.4);
+        }
+
+        .voice-btn.recording {
+            animation: pulse 1s infinite;
+            background: linear-gradient(135deg, #ff6b6b, #ee5a52);
+        }
+
+        @keyframes pulse {
+            0% { transform: translateY(-50%) scale(1); }
+            50% { transform: translateY(-50%) scale(1.1); }
+            100% { transform: translateY(-50%) scale(1); }
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            border-radius: 25px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            width: 100%;
+            box-shadow: 0 8px 25px rgba(102, 126, 234, 0.3);
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 12px 30px rgba(102, 126, 234, 0.4);
+        }
+
+        .entries-list {
+            margin-top: 30px;
+        }
+
+        .entry-card {
+            background: white;
+            border-radius: 15px;
+            padding: 20px;
+            margin-bottom: 15px;
+            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.1);
+            border-left: 4px solid #667eea;
+            transition: all 0.3s ease;
+        }
+
+        .entry-card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+        }
+
+        .entry-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+
+        .entry-title {
+            font-weight: 600;
+            color: #667eea;
+            font-size: 16px;
+        }
+
+        .entry-date {
+            color: #888;
+            font-size: 12px;
+        }
+
+        .entry-content {
+            color: #666;
+            line-height: 1.6;
+            margin-bottom: 10px;
+        }
+
+        .entry-special {
+            background: linear-gradient(135deg, #ff9a9e, #fecfef);
+            color: white;
+            padding: 8px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            display: inline-block;
+            margin-top: 10px;
+        }
+
+        .search-box {
+            width: 100%;
+            padding: 12px 15px;
+            margin-bottom: 20px;
+            border: 2px solid #e1e8f0;
+            border-radius: 25px;
+            font-size: 16px;
+            background: white;
+            transition: all 0.3s ease;
+        }
+
+        .search-box:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 20px rgba(102, 126, 234, 0.2);
+        }
+
+        .tag {
+            display: inline-block;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            padding: 4px 10px;
+            border-radius: 15px;
+            font-size: 12px;
+            margin-right: 5px;
+            margin-bottom: 5px;
+        }
+
+        @media (max-width: 768px) {
+            .content {
+                padding: 15px;
+            }
+            
+            .form-group input,
+            .form-group select,
+            .form-group textarea {
+                font-size: 16px; /* Prevents zoom on iOS */
+            }
+            
+            .app-title {
+                font-size: 20px;
+            }
+            
+            .tab {
+                padding: 12px 15px;
+                font-size: 14px;
+            }
+        }
+
+        .no-entries {
+            text-align: center;
+            color: #888;
+            padding: 40px 20px;
+            background: white;
+            border-radius: 15px;
+            margin-top: 20px;
+        }
+
+        .loading {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #667eea;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-left: 10px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <div class="app-container">
+        <div class="header">
+            <div class="logo-placeholder">
+                <img src="./baba.png" alt="baba">
+            </div>
+            <div class="app-title">Om Shanthi</div>
+        </div>
+
+        <div class="tab-container">
+            <div class="tab active" onclick="switchTab('spiritual')">
+                🙏 Spiritual Notes
+            </div>
+            <div class="tab" onclick="switchTab('daily')">
+                📝 Daily Life
+            </div>
+        </div>
+
+        <div class="content">
+            <!-- Spiritual Notes Section -->
+            <div id="spiritual" class="section active">
+                <form id="spiritualForm">
+                    <div class="form-group">
+                        <label>Murli Type</label>
+                        <select id="murliType" required>
+                            <option value="">Select Murli Type</option>
+                            <option value="Sakar Murli">Sakar Murli</option>
+                            <option value="Avyakt Murli">Avyakt Murli</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Date</label>
+                        <input type="date" id="spiritualDate" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Points to Note</label>
+                        <div class="voice-input-container">
+                            <textarea id="spiritualPoints" placeholder="Enter your spiritual points here..." required></textarea>
+                            <button type="button" class="voice-btn" onclick="startVoiceInput('spiritualPoints')" title="Voice Input">
+                                🎤
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Special Notes</label>
+                        <div class="voice-input-container">
+                            <textarea id="spiritualSpecial" placeholder="Any special observations..."></textarea>
+                            <button type="button" class="voice-btn" onclick="startVoiceInput('spiritualSpecial')" title="Voice Input">
+                                🎤
+                            </button>
+                        </div>
+                    </div>
+
+                    <button type="submit" class="btn-primary">
+                        Save Spiritual Note ✨
+                    </button>
+                </form>
+
+                <div class="entries-list">
+                    <input type="text" class="search-box" placeholder="🔍 Search spiritual notes..." onkeyup="searchEntries('spiritual')">
+                    <div id="spiritualEntries"></div>
+                </div>
+            </div>
+
+            <!-- Daily Life Section -->
+            <div id="daily" class="section">
+                <form id="dailyForm">
+                    <div class="form-group">
+                        <label>Tags / Topic</label>
+                        <input type="text" id="dailyTags" placeholder="e.g., work, family, health, goals" required>
+                        <small style="color: #666; font-size: 12px;">Separate multiple tags with commas</small>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Date</label>
+                        <input type="date" id="dailyDate" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Content to Note</label>
+                        <div class="voice-input-container">
+                            <textarea id="dailyContent" placeholder="What happened today? What do you want to remember?" required></textarea>
+                            <button type="button" class="voice-btn" onclick="startVoiceInput('dailyContent')" title="Voice Input">
+                                🎤
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Special Notes</label>
+                        <div class="voice-input-container">
+                            <textarea id="dailySpecial" placeholder="Important reminders or reflections..."></textarea>
+                            <button type="button" class="voice-btn" onclick="startVoiceInput('dailySpecial')" title="Voice Input">
+                                🎤
+                            </button>
+                        </div>
+                    </div>
+
+                    <button type="submit" class="btn-primary">
+                        Save Daily Note 📝
+                    </button>
+                </form>
+
+                <div class="entries-list">
+                    <input type="text" class="search-box" placeholder="🔍 Search daily notes..." onkeyup="searchEntries('daily')">
+                    <div id="dailyEntries"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Data storage (in memory - for web app conversion to mobile, this would use local database)
+        let spiritualEntries = [];
+        let dailyEntries = [];
+        let recognition;
+        let currentVoiceTarget = null;
+
+        // Initialize the app
+        document.addEventListener('DOMContentLoaded', function() {
+            // Set today's date as default
+            const today = new Date().toISOString().split('T')[0];
+            document.getElementById('spiritualDate').value = today;
+            document.getElementById('dailyDate').value = today;
+
+            // Initialize voice recognition if available
+            if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
+                recognition = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
+                recognition.continuous = false;
+                recognition.interimResults = false;
+                recognition.lang = 'en-US';
+
+                recognition.onstart = function() {
+                    console.log('Voice recognition started');
+                };
+
+                recognition.onresult = function(event) {
+                    const text = event.results[0][0].transcript;
+                    if (currentVoiceTarget) {
+                        const currentText = document.getElementById(currentVoiceTarget).value;
+                        document.getElementById(currentVoiceTarget).value = currentText + (currentText ? ' ' : '') + text;
+                    }
+                };
+
+                recognition.onerror = function(event) {
+                    console.error('Voice recognition error:', event.error);
+                    alert('Voice recognition error: ' + event.error);
+                };
+
+                recognition.onend = function() {
+                    if (currentVoiceTarget) {
+                        document.querySelector(`button[onclick="startVoiceInput('${currentVoiceTarget}')"]`).classList.remove('recording');
+                    }
+                    currentVoiceTarget = null;
+                };
+            }
+
+            // Load existing entries
+            loadEntries();
+        });
+
+        // Tab switching
+        function switchTab(tabName) {
+            // Remove active class from all tabs and sections
+            document.querySelectorAll('.tab').forEach(tab => tab.classList.remove('active'));
+            document.querySelectorAll('.section').forEach(section => section.classList.remove('active'));
+
+            // Add active class to clicked tab and corresponding section
+            event.target.classList.add('active');
+            document.getElementById(tabName).classList.add('active');
+        }
+
+        // Voice input function
+        function startVoiceInput(targetId) {
+            if (!recognition) {
+                alert('Voice recognition is not supported in your browser');
+                return;
+            }
+
+            currentVoiceTarget = targetId;
+            const button = document.querySelector(`button[onclick="startVoiceInput('${targetId}')"]`);
+            button.classList.add('recording');
+            
+            try {
+                recognition.start();
+            } catch (error) {
+                console.error('Error starting voice recognition:', error);
+                button.classList.remove('recording');
+                currentVoiceTarget = null;
+            }
+        }
+
+        // Form submission handlers
+        document.getElementById('spiritualForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const entry = {
+                id: Date.now(),
+                murliType: document.getElementById('murliType').value,
+                date: document.getElementById('spiritualDate').value,
+                points: document.getElementById('spiritualPoints').value,
+                special: document.getElementById('spiritualSpecial').value,
+                timestamp: new Date().toISOString()
+            };
+
+            spiritualEntries.unshift(entry);
+            this.reset();
+            document.getElementById('spiritualDate').value = new Date().toISOString().split('T')[0];
+            displayEntries('spiritual');
+            
+            // Show success message
+            showMessage('Spiritual note saved successfully! ✨');
+        });
+
+        document.getElementById('dailyForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const entry = {
+                id: Date.now(),
+                tags: document.getElementById('dailyTags').value,
+                date: document.getElementById('dailyDate').value,
+                content: document.getElementById('dailyContent').value,
+                special: document.getElementById('dailySpecial').value,
+                timestamp: new Date().toISOString()
+            };
+
+            dailyEntries.unshift(entry);
+            this.reset();
+            document.getElementById('dailyDate').value = new Date().toISOString().split('T')[0];
+            displayEntries('daily');
+            
+            // Show success message
+            showMessage('Daily note saved successfully! 📝');
+        });
+
+        // Display entries
+        function displayEntries(type) {
+            const container = document.getElementById(type + 'Entries');
+            const entries = type === 'spiritual' ? spiritualEntries : dailyEntries;
+
+            if (entries.length === 0) {
+                container.innerHTML = `
+                    <div class="no-entries">
+                        <p>${type === 'spiritual' ? '🙏' : '📝'} No ${type} notes yet.</p>
+                        <p>Start by adding your first entry above!</p>
+                    </div>
+                `;
+                return;
+            }
+
+            container.innerHTML = entries.map(entry => {
+                if (type === 'spiritual') {
+                    return `
+                        <div class="entry-card">
+                            <div class="entry-header">
+                                <div class="entry-title">${entry.murliType}</div>
+                                <div class="entry-date">${formatDate(entry.date)}</div>
+                            </div>
+                            <div class="entry-content">${entry.points}</div>
+                            ${entry.special ? `<div class="entry-special">${entry.special}</div>` : ''}
+                        </div>
+                    `;
+                } else {
+                    return `
+                        <div class="entry-card">
+                            <div class="entry-header">
+                                <div class="entry-title">
+                                    ${entry.tags.split(',').map(tag => `<span class="tag">${tag.trim()}</span>`).join('')}
+                                </div>
+                                <div class="entry-date">${formatDate(entry.date)}</div>
+                            </div>
+                            <div class="entry-content">${entry.content}</div>
+                            ${entry.special ? `<div class="entry-special">${entry.special}</div>` : ''}
+                        </div>
+                    `;
+                }
+            }).join('');
+        }
+
+        // Search entries
+        function searchEntries(type) {
+            const searchTerm = event.target.value.toLowerCase();
+            const entries = type === 'spiritual' ? spiritualEntries : dailyEntries;
+            
+            const filteredEntries = entries.filter(entry => {
+                if (type === 'spiritual') {
+                    return entry.murliType.toLowerCase().includes(searchTerm) ||
+                           entry.points.toLowerCase().includes(searchTerm) ||
+                           (entry.special && entry.special.toLowerCase().includes(searchTerm));
+                } else {
+                    return entry.tags.toLowerCase().includes(searchTerm) ||
+                           entry.content.toLowerCase().includes(searchTerm) ||
+                           (entry.special && entry.special.toLowerCase().includes(searchTerm));
+                }
+            });
+
+            const container = document.getElementById(type + 'Entries');
+            
+            if (filteredEntries.length === 0) {
+                container.innerHTML = `
+                    <div class="no-entries">
+                        <p>🔍 No entries found matching "${searchTerm}"</p>
+                    </div>
+                `;
+                return;
+            }
+
+            container.innerHTML = filteredEntries.map(entry => {
+                if (type === 'spiritual') {
+                    return `
+                        <div class="entry-card">
+                            <div class="entry-header">
+                                <div class="entry-title">${entry.murliType}</div>
+                                <div class="entry-date">${formatDate(entry.date)}</div>
+                            </div>
+                            <div class="entry-content">${entry.points}</div>
+                            ${entry.special ? `<div class="entry-special">${entry.special}</div>` : ''}
+                        </div>
+                    `;
+                } else {
+                    return `
+                        <div class="entry-card">
+                            <div class="entry-header">
+                                <div class="entry-title">
+                                    ${entry.tags.split(',').map(tag => `<span class="tag">${tag.trim()}</span>`).join('')}
+                                </div>
+                                <div class="entry-date">${formatDate(entry.date)}</div>
+                            </div>
+                            <div class="entry-content">${entry.content}</div>
+                            ${entry.special ? `<div class="entry-special">${entry.special}</div>` : ''}
+                        </div>
+                    `;
+                }
+            }).join('');
+        }
+
+        // Utility functions
+        function formatDate(dateStr) {
+            const date = new Date(dateStr);
+            return date.toLocaleDateString('en-US', { 
+                year: 'numeric', 
+                month: 'short', 
+                day: 'numeric' 
+            });
+        }
+
+        function showMessage(message) {
+            // Create and show a temporary success message
+            const messageDiv = document.createElement('div');
+            messageDiv.style.cssText = `
+                position: fixed;
+                top: 20px;
+                left: 50%;
+                transform: translateX(-50%);
+                background: linear-gradient(135deg, #4CAF50, #45a049);
+                color: white;
+                padding: 15px 25px;
+                border-radius: 25px;
+                box-shadow: 0 8px 25px rgba(76, 175, 80, 0.3);
+                z-index: 1000;
+                font-weight: 500;
+                animation: slideDown 0.3s ease;
+            `;
+            messageDiv.textContent = message;
+            
+            document.body.appendChild(messageDiv);
+            
+            setTimeout(() => {
+                messageDiv.style.animation = 'slideUp 0.3s ease forwards';
+                setTimeout(() => document.body.removeChild(messageDiv), 300);
+            }, 3000);
+        }
+
+        function loadEntries() {
+            // For web app, you would load from localStorage or a database
+            // For now, we'll start with empty arrays
+            displayEntries('spiritual');
+            displayEntries('daily');
+        }
+
+        // Add CSS animations for messages
+        const style = document.createElement('style');
+        style.textContent = `
+            @keyframes slideDown {
+                from {
+                    transform: translateX(-50%) translateY(-100px);
+                    opacity: 0;
+                }
+                to {
+                    transform: translateX(-50%) translateY(0);
+                    opacity: 1;
+                }
+            }
+            
+            @keyframes slideUp {
+                from {
+                    transform: translateX(-50%) translateY(0);
+                    opacity: 1;
+                }
+                to {
+                    transform: translateX(-50%) translateY(-100px);
+                    opacity: 0;
+                }
+            }
+        `;
+        document.head.appendChild(style);
+    </script>
+</body>
+</html>
